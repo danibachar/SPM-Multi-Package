@@ -1,0 +1,82 @@
+# SPM-Multi-Package
+This repo shows two SPM setups, that on the multi package one, we cannot run xcodebuild tests per each target
+
+## Prereqists
+1) MacOS 12.x and above
+2) Xcode 14.1 and above
+3) Clone the repo `git clone --depth=1 https://github.com/danibachar/SPM-Multi-Package.git`
+
+## Steps to show the issue
+
+1) Move to the root directory by running `cd SPM-Multi-Package`
+2) Run test suite CLI commands on the SinglePackage SPM
+2.1) Run `cd  SinglePackage`
+2.2) Run `swift package resolve`
+2.3) Run `xcodebuild -list -json` -> The expected output of that command shall be
+```
+{
+  "workspace" : {
+    "name" : "SinglePackage",
+    "schemes" : [
+      "SinglePackage"
+    ]
+  }
+}
+```
+2.4) Run `xcodebuild -scheme SinglePackage` - this should yiled a list of available simulators to build and run for, something like
+```
+...
+{ platform:iOS Simulator, id:2959BD0F-3FFE-4EC4-AF26-4AC7A8E7BCF4, OS:16.1, name:iPad (9th generation) }
+{ platform:iOS Simulator, id:E98705F7-0A52-45E7-B3A5-DDBD7B2C4E76, OS:16.1, name:iPad (10th generation) }
+{ platform:iOS Simulator, id:7E71FC36-469B-427D-9F4C-8DAD4AE2E322, OS:16.1, name:iPad Air (5th generation) }
+{ platform:iOS Simulator, id:EC0E0528-3C61-4172-B199-BA8B8CC203BA, OS:16.1, name:iPad Pro (11-inch) (3rd generation) }
+{ platform:iOS Simulator, id:B1E1A091-1D5D-42B0-86B3-130252BB265B, OS:16.1, name:iPad Pro (11-inch) (4th generation) }
+{ platform:iOS Simulator, id:5AA62AD5-66F2-46A0-82EE-58751DB4AA71, OS:16.1, name:iPad Pro (12.9-inch) (5th generation) }
+{ platform:iOS Simulator, id:A00A9FC6-49CD-4D45-9B0F-2D3829761349, OS:16.1, name:iPad Pro (12.9-inch) (6th generation) }
+{ platform:iOS Simulator, id:EA9E089C-8D9F-4F41-87D2-6DBDAD3C143E, OS:16.1, name:iPad mini (6th generation) }
+{ platform:iOS Simulator, id:4BE845BA-AE9E-4F53-B2FB-A5415C89950B, OS:16.1, name:iPhone 14 }
+{ platform:iOS Simulator, id:E2B53908-4319-4A3F-A187-1D31775DE285, OS:16.1, name:iPhone 14 Plus }
+{ platform:iOS Simulator, id:3B685DFE-66FC-41C1-816A-F604B035541F, OS:16.1, name:iPhone 14 Pro }
+{ platform:iOS Simulator, id:81BCD0EF-3B19-40DF-853E-E983E33AFCB7, OS:16.1, name:iPhone 14 Pro Max }
+{ platform:iOS Simulator, id:6EDF20EB-8E1A-414D-8A6C-F20299552283, OS:16.1, name:iPhone SE (3rd generation) }
+...
+```
+2.5) Then we can build and run tests as follow
+```
+xcodebuild -scheme SinglePackage -destination 'platform=iOS Simulator,id=4BE845BA-AE9E-4F53-B2FB-A5415C89950B' build test 
+```
+
+4) This stage should be finish with successful build and tests run
+
+5) Run test suite CLI commands on the MultiPackage SPM
+5.1) cd into the `MultiPackage` directory - run `cd MultiPackage`
+5.2) Run `swift package resolve`
+5.3) Run `xcodebuild -list -json` -> The expected output of that command shall be
+```
+{
+  "workspace" : {
+    "name" : "MultiPackage",
+    "schemes" : [
+      "MultiPackage-Package",
+      "MultiPackage1",
+      "MultiPackage2"
+    ]
+  }
+}
+```
+5.4) Run `xcodebuild -scheme MultiPackage` - See part (2.4) for more details
+5.5) Then we can build and run tests as follow
+```
+xcodebuild -scheme MultiPackage1 -destination 'platform=iOS Simulator,id=4BE845BA-AE9E-4F53-B2FB-A5415C89950B' build test
+```
+5.6) Then we can build and run tests as follow
+```
+xcodebuild -scheme MultiPackage2 -destination 'platform=iOS Simulator,id=4BE845BA-AE9E-4F53-B2FB-A5415C89950B' build test
+```
+5.7) Then we can build and run tests as follow
+```
+xcodebuild -scheme MultiPackage-Package -destination 'platform=iOS Simulator,id=4BE845BA-AE9E-4F53-B2FB-A5415C89950B' build test
+```
+
+6) Note that 5.5 and 5.6 should fail testing, with an error `xcodebuild: error: Scheme MultiPackageX is not currently configured for the test action.` Just building (without test) would work
+7) Note that only step 5.7 would build and tests all of the sub packages in the `MultiPackage` SPM
